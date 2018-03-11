@@ -36,7 +36,9 @@ Install::
 
 Run it to install as crontab job run hourly::
 
-  holdmykeys hvnsweeting
+  holdmykeys YOURGITHUB_USERNAME
+
+To allow more keys, just add them as your SSH public key on GitHub settings.
 
 That's it!
 
