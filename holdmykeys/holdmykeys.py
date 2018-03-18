@@ -8,6 +8,7 @@ import tempfile
 """Main module."""
 
 GITHUB_API_KEYS = "https://api.github.com/users/{username}/keys"
+HOLDMYKEYS_SIGNATURE = '{username}@github_holdmykeys'
 
 
 def get_public_key(username):
@@ -31,23 +32,27 @@ def get_user_ssh_authorized_path(posix_user=None):
     return os.path.join(home, '.ssh', 'authorized_keys')
 
 
-def ensuring_key_authorized(pubkey):
+def ensuring_key_authorized(pubkey, username):
     pubkey = pubkey.strip()
     authorized_keys = get_user_ssh_authorized_path()
     exists = False
-    with open(authorized_keys) as f:
-        keys = []
-        for line in f:
-            if line.startswith('ssh-'):
-                line = line.strip()
-                type_key = ' '.join(line.split(' ')[:2])
-                keys.append(type_key)
-                if pubkey == type_key:
-                    exists = True
+
+    if os.path.isfile(authorized_keys):
+        with open(authorized_keys) as f:
+            keys = []
+            for line in f:
+                if line.startswith('ssh-'):
+                    line = line.strip()
+                    type_key = ' '.join(line.split(' ')[:2])
+                    keys.append(type_key)
+                    if pubkey == type_key:
+                        exists = True
     if not exists:
         with open(authorized_keys, 'at') as f:
             f.write('\n')
-            f.write(pubkey)
+            signature = HOLDMYKEYS_SIGNATURE.format(username=username)
+            pubkey_with_signature = '{} {}'.format(pubkey, signature)
+            f.write(pubkey_with_signature)
     # TODO might need keep existing metadata of file
     #  $ ls -la ~/.ssh/authorized_keys
     # -rw-------  1 viethung.nguyen  viethung.nguyen  649 Mar 10 11:11 /Users/viethung.nguyen/.ssh/authorized_keys
@@ -55,7 +60,8 @@ def ensuring_key_authorized(pubkey):
 
 def add_me_to_cronjob(username, freshness_in_hours=1):
     pythonpath = sys.executable
-    crontab = "0 */{} * * * {} holdmykeys --silent {}".format(freshness_in_hours, pythonpath, username)
+    binpath = os.path.join(os.path.dirname(pythonpath), 'holdmykeys')
+    crontab = "0 */{} * * * {} --silent {}".format(freshness_in_hours, binpath, username)
     try:
         existing_crontabs = spr.check_output(['crontab', '-l']).decode().splitlines()
     except spr.CalledProcessError:
@@ -81,8 +87,9 @@ def add_me_to_cronjob(username, freshness_in_hours=1):
 def main():
     print(get_user_ssh_authorized_path())
     print('Ensuring all keys in authorized_keys')
-    for key in get_public_key('hvnsweeting'):
-        ensuring_key_authorized(key)
+    username = 'hvnsweeting'
+    for key in get_public_key(username):
+        ensuring_key_authorized(key, username)
 
     print('Adding this tool to run every hour in crontab')
     add_me_to_cronjob('hvnsweeting')

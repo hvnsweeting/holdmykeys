@@ -27,7 +27,7 @@ def main(args=None):
     myprint('Ensuring all keys in authorized_keys')
     username = args.username
     for key in get_public_key(username):
-        ensuring_key_authorized(key)
+        ensuring_key_authorized(key, username)
 
     myprint('Adding this tool to run every hour in crontab')
     add_me_to_cronjob(username)

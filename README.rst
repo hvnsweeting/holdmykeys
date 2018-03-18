@@ -74,7 +74,7 @@ Features
 TODO
 ----
 
-Support python2
+- Remove keys when it was removed on GitHub (i.e: rm compromised keys)
 
 Credits
 -------
